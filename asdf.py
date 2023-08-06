@@ -241,6 +241,8 @@ def print_history():
 def print_changed():
     g = get_git_details()
     files = g['changed_files']
+    print_break()
+    print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + Style.RESET_ALL + f" ({len(files)} files)")
 
     if not files:
         print(msg_err("\nNo changed files found... Exiting.\n"))
@@ -248,8 +250,6 @@ def print_changed():
 
     
 
-    print_break()
-    print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + Style.RESET_ALL + f" ({len(files)} files)")
     for file in files[:3]:
         print(f" {msg_warn('-')} {file}")
 
