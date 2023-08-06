@@ -228,9 +228,10 @@ def print_history():
     g = get_git_details()
     history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n %s" --date=format:"%m/%d %H:%M" --reverse')
     commits = history.split('---')
+    commits = [entry for entry in commits if entry]
 
     print_break()
-    print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"), end="")
+    print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"))
     for commit in commits[:10]:
         commit = commit.replace(g['username'], '')
         print(f" {commit}")
@@ -255,6 +256,7 @@ def print_changed():
 
     if len(files) > 3:
         print(f"    ...{len(files) - 3} more files")
+
 
  
 
@@ -289,105 +291,3 @@ def main():
 # Execute main function
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-# import os
-# import subprocess
-# import requests
-# from getpass import getpass
-
-# # Function for running shell commands and getting the output
-# def run_command(cmd):
-#     return subprocess.check_output(cmd, shell=True).decode().strip()
-
-# # Function to clear console
-# def clear_console():
-#     os.system('cls' if os.name == 'nt' else 'clear')
-
-# # Function for checking and initializing git repo
-# def init_git():
-#     if not os.path.isdir(".git"):
-#         print("Current directory is not a Git repository.")
-#         init_git_response = input("> Initialize a repository? (y/N): ")
-#         if init_git_response.lower() == 'y':
-#             run_command('git init')
-#         else:
-#             print("This command can only be run from within a git repository. Exiting.")
-#             exit()
-
-# # Function for checking and creating .gitignore
-# def create_gitignore():
-#     if not os.path.isfile('.gitignore'):
-#         print("No '.gitignore' file found!")
-#         use_template = input("> Create from template? (Y/n): ")
-#         if use_template.lower() != 'n':
-#             template_name = input("Enter a template name: ")
-#             response = requests.get(f'https://raw.githubusercontent.com/github/gitignore/master/{template_name}.gitignore')
-#             if response.status_code == 200:
-#                 with open('.gitignore', 'w') as f:
-#                     f.write(response.text)
-#                 print(f"Created '.gitignore' from template: '{template_name}'")
-#             else:
-#                 print(f"Error creating '.gitignore' from template: '{template_name}'. Verify the template exists or create the file manually.")
-#                 exit()
-#         else:
-#             with open('.gitignore', 'w') as f:
-#                 f.write("node_modules\n.env*\n")
-#             print("Created default '.gitignore' file")
-
-# # Function for getting git repo details
-# def get_git_details():
-#     origin = run_command('git remote get-url origin')
-#     if origin:
-#         fetch_url = run_command('git remote get-url origin')
-#         push_url = run_command('git remote get-url --push origin')
-#         fetch_user, fetch_repo = fetch_url.split('/')[-2:]
-#         fetch_repo = fetch_repo.replace('.git', '')
-#         push_user, push_repo = push_url.split('/')[-2:]
-#         push_repo = push_repo.replace('.git', '')
-#     else:
-#         fetch_user = push_user = 'local'
-#         fetch_repo = push_repo = run_command('git rev-parse --show-toplevel').split('/')[-1]
-
-#     username = run_command('git config user.name')
-#     email = run_command('git config user.email')
-#     branch = run_command('git symbolic-ref --short HEAD')
-#     changed_files = run_command('git diff --cached --name-only').split('\n')
-#     return username, email, branch, fetch_user, fetch_repo, push_user, push_repo, changed_files
-
-# # Main function
-# def main():
-#     clear_console()
-#     init_git()
-#     create_gitignore()
-
-#     username, email, branch, fetch_user, fetch_repo, push_user, push_repo, changed_files = get_git_details()
-#     if not changed_files:
-#         print("No changed files found... Exiting.")
-#         exit()
-
-#     print(f"{username}  {email}")
-#     print(f"  fetch << {fetch_user}/{fetch_repo}/{branch}")
-#     print(f"  push  >> {push_user}/{push_repo}/{branch}")
-
-#     print(f"\nChanges: ({len(changed_files)} files)")
-#     for file in changed_files[:3]:
-#         print(f"  - {file}")
-
-#     if len(changed_files) > 3:
-#         print(f"    ...{len(changed_files) - 3} more files")
-
-#     message = input("\nCommit:\n")
-#     if not message:
-#         print("No message. Cancelling commit and exiting.")
-#         exit()
-
-#     run_command('git commit -m "{}"'.format(message))
-
-# # Execute main function
-# if __name__ == "__main__":
-#     main()
