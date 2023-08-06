@@ -211,7 +211,7 @@ def get_git_details():
 
 
 def print_break():
-    print(Fore.BLACK + '-' * 30, end="")
+    print('\n' + Fore.BLACK + '-' * 60, end="")
 
 
 
@@ -248,9 +248,10 @@ def print_changed():
 
     
 
+    print_break()
     print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + Style.RESET_ALL + f" ({len(files)} files)")
     for file in files[:3]:
-        print(f"  {file}")
+        print(f"  {msg_warn('-')} {file}")
 
     if len(files) > 3:
         print(f"    ...{len(files) - 3} more files")
@@ -276,9 +277,11 @@ def main():
     # print(f"  push  >> {Fore.BLUE}{push_user}/{Fore.WHITE}{push_repo}/{Fore.YELLOW}{branch}" + Style.RESET_ALL)
 
 
-    message = input(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL)
+    print_break()
+    message = input(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL).strip()
     if not message:
-        print(Fore.YELLOW + Style.BRIGHT + "No message. Cancelling commit and exiting." + Style.RESET_ALL)
+        print("\033[A\033[2K", end="")
+        print(msg_err("No message. Cancelling commit and exiting.\n"))
         exit()
 
     run_command('git commit -m "' + message + '"')
