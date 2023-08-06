@@ -6,6 +6,9 @@ from colorama import Fore, Style, Back
 import time
 import functools
 
+MAX_HISTORY = 5
+MAX_CHANGES = 3
+
 def useCache(func=None, cache_time=5000):
     if func is None:  # Decorator was called with parentheses but no arguments.
         return lambda f: useCache(f, cache_time=cache_time)
@@ -81,7 +84,7 @@ def init_git():
             print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim(19 * ' ' + "Repo initialized."))
         else:
             print("\033[A\033[2K", end="")
-            print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "N")
+            print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "N" + msg_dim(19 * ' ' + "Aborted."))
             print(Fore.RED + Style.BRIGHT + "\nThis command can only be run from within a git repository.")
             sys.exit()
 
@@ -166,7 +169,27 @@ def get_git_details():
 
     run_command('git add .')
     # changed_files = run_command('git diff --cached --name-only').split('\n')
-    changed_files = list(filter(None, run_command('git diff --cached --name-only').split('\n')))
+    # changed_files = list(filter(None, run_command('git diff --cached --name-status --numstat').split('\n')))
+
+    name_status_lines = list(filter(None, run_command('git diff --cached --name-status').split('\n')))
+    numstat_lines = list(filter(None, run_command('git diff --cached --numstat').split('\n')))
+
+    combined_changes = {}
+
+    for name_status_line, numstat_line in zip(name_status_lines, numstat_lines):
+        status, filename = name_status_line.split(maxsplit=1)
+        additions, deletions, _ = numstat_line.split()
+
+        if filename in combined_changes:
+            combined_changes[filename]['additions'] += int(additions)
+            combined_changes[filename]['deletions'] += int(deletions)
+        else:
+            combined_changes[filename] = {
+                'status': status,
+                'additions': int(additions),
+                'deletions': int(deletions)
+            }
+
     return {
         "username": username,
         "email": email,
@@ -177,7 +200,7 @@ def get_git_details():
         "push_user": push_user,
         "push_url": push_url,
         "push_repo": push_repo,
-        "changed_files": changed_files,
+        "changed_files": combined_changes,
     }
 
 
@@ -212,7 +235,7 @@ def print_history(last = False):
             print(f"{commit}")
     
     else:
-        commit_limit = 10 # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
+        commit_limit = MAX_HISTORY # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
         
         history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n%s" --date=format:"%m/%d %H:%M" --reverse')
         commits = history.split('---')
@@ -232,45 +255,65 @@ def print_changed():
     g = get_git_details()
     files = g['changed_files']
     print_break()
-    print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + msg_dim(f" ({len(files)} files)"))
 
     if not files:
         print(msg_err("\nNo changed files found... Exiting.\n"))
         sys.exit()
 
+    changed_count = 0
+    added_count = 0
+    deleted_count = 0
+
+    for filename, changes in list(files.items()):
+        if changes['status'] == 'M':
+            changed_count += 1
+        elif changes['status'] == 'A':
+            added_count += 1
+        elif changes['status'] == 'D':
+            deleted_count += 1
+    added = ""
+    deleted = ""
+    if added_count > 0:
+        added = f", {added_count} added"
+    if deleted_count > 0:
+        added = f", {deleted_count} deleted"
     
+    print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + msg_dim(f" ({changed_count} changed{added}{deleted})"))
 
-    for file in files[:3]: 
-        print(f"{msg_warn('-')} {file}")
+    for filename, changes in list(files.items())[:MAX_CHANGES]: 
+        # print(filename, changes)
+        # added, removed, path = file.split('\t')
+        name = format_template_name(filename, 30)
+        print(f"{msg_warn('-')} {name} {Fore.BLACK + changes['status']} {Fore.GREEN}+{changes['additions']} {Fore.RED}-{changes['deletions']}{Style.RESET_ALL}")
 
-    if len(files) > 3:
-        print(msg_dim(f"    ...{len(files) - 3} more files"))
+    if len(files) > MAX_CHANGES:
+        print(msg_dim(f"    ...{len(files) - MAX_CHANGES} more files"))
 
 
-def load_config():
-    import json
+# def load_config():
+#     import json
 
-    data = {"my_var": 123}  # initial data
+#     data = {"my_var": 123}  # initial data
 
-    # Save data to a file
-    with open("data.json", "w") as f:
-        json.dump(data, f)
+#     # Save data to a file
+#     with open("data.json", "w") as f:
+#         json.dump(data, f)
 
-    # Later, load data from the file
-    with open("data.json", "r") as f:
-        data = json.load(f)
-        
-    if len(sys.argv) > 1:
-        print(f"Received the following arguments: {sys.argv[1:]}")
+#     # Later, load data from the file
+#     with open("data.json", "r") as f:
+#         data = json.load(f)
+
+#     if len(sys.argv) > 1:
+#         print(f"Received the following arguments: {sys.argv[1:]}")
 
 
 
 # Main function
 def main():
 
-    load_config()
+    # load_config()
 
-    # clear_console()
+    clear_console()
     init_git()
     create_gitignore()
 
