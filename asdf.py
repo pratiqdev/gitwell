@@ -251,7 +251,8 @@ def print_history(last = False):
 
 oldG = {}
 
-def print_changed(useOld = False):
+def print_changed(useOld=False):
+    global oldG  # Add this line to indicate you want to use the global variable
     g = oldG if useOld else get_git_details()
     oldG = g.copy()
     files = g['changed_files']
