@@ -221,7 +221,7 @@ def print_history(last = False):
         print_break()
         print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"))
         
-        for commit in commits[:commit_limit]:
+        for commit in commits[-commit_limit:]:
             commit = commit.replace(g['username'], '')
             print(f"{commit}")
 
