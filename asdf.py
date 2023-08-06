@@ -251,7 +251,7 @@ def print_changed():
 
     
 
-    for file in files[:3]:
+    for file in files[:3]: 
         print(f" {msg_warn('-')} {file}")
 
     if len(files) > 3:
@@ -286,7 +286,13 @@ def main():
         print(msg_err("No message. Cancelling commit and exiting.\n"))
         exit()
 
-    run_command('git commit -m "' + message + '"')
+    try:
+        run_command('git commit -m "' + message + '"')
+        clear_console()
+        print_heading()
+        print(message)
+    except Exception as e:
+        print(msg_err("Error creating commit:" + e))
 
 # Execute main function
 if __name__ == "__main__":
