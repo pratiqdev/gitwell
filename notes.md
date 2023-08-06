@@ -1,0 +1,1 @@
+- create set of layouts/themes for each section [heading, history, diff, commit]

@@ -247,12 +247,30 @@ def print_changed():
         print(msg_dim(f"    ...{len(files) - 3} more files"))
 
 
- 
+def load_config():
+    import json
+
+    data = {"my_var": 123}  # initial data
+
+    # Save data to a file
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    # Later, load data from the file
+    with open("data.json", "r") as f:
+        data = json.load(f)
+        
+    if len(sys.argv) > 1:
+        print(f"Received the following arguments: {sys.argv[1:]}")
+
 
 
 # Main function
 def main():
-    clear_console()
+
+    load_config()
+
+    # clear_console()
     init_git()
     create_gitignore()
 

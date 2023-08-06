@@ -29,4 +29,4 @@ source ~/.zshrc
 Then run from anywhere:
 ```
 $user:dir:main > asdf
-```
+``` 
