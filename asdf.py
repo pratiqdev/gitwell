@@ -233,8 +233,10 @@ def print_history(last = False):
     commits = history.split('---')
     commits = [entry for entry in commits if entry]
 
-    print_break()
-    print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"))
+    if not last:
+        print_break()
+        print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"))
+    
     for commit in commits:
         commit = commit.replace(g['username'], '')
         print(f" {commit}")
