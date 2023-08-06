@@ -229,7 +229,8 @@ def print_history(last = False):
         commits = history.split('---')
         commits = [entry for entry in commits if entry]
 
-        
+        print_break()
+        print(Fore.BLUE + Style.BRIGHT + "\nCommit:")
         for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
             print(f"{commit}")
@@ -342,10 +343,9 @@ def main():
         run_command('git commit -m "' + message + '"')
         clear_console()
         print_heading()
-        print('')
         print_changed(True)
-        print_history(True)
         print('')
+        print_history(True)
     except Exception as e:
         print(msg_err("Error creating commit:" + e))
 
