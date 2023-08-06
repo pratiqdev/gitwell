@@ -290,7 +290,7 @@ def main():
         run_command('git commit -m "' + message + '"')
         clear_console()
         print_heading()
-        print(Fore.GREEN + message + Style.RESET_ALL + '\n')
+        print(msg_blue("Commit: ") + Fore.GREEN + message + Style.RESET_ALL + '\n')
     except Exception as e:
         print(msg_err("Error creating commit:" + e))
 
