@@ -209,7 +209,7 @@ def print_history(last = False):
         
         for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
-            print(f"{commit}")
+            print(msg_bright(f"{commit}"))
     
     else:
         commit_limit = 10 # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
