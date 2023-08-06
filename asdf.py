@@ -295,7 +295,9 @@ def main():
         run_command('git commit -m "' + message + '"')
         clear_console()
         print_heading()
+        print('')
         print_history(True)
+        print('')
     except Exception as e:
         print(msg_err("Error creating commit:" + e))
 
