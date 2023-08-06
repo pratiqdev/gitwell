@@ -3,7 +3,7 @@ import subprocess
 import requests
 import json
 from getpass import getpass
-from colorama import Fore, Style
+from colorama import Fore, Style, Back
 from types import SimpleNamespace
 
 # Create an instance
@@ -225,11 +225,14 @@ def print_heading():
 
 
 def print_history():
-    history = run_command('git log --oneline | tac')
+    history = run_command(f'git log --pretty=format:"\t{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad {Fore.GREEN}%an {Fore.BLACK}%ar {Style.RESET_ALL} \n\t %s" --date=format:"%m/%d %H:%M"')
+    commits = history.split('\n')
+    # 63f054b - pratiqdev, 6 minutes ago : blap
+    # print(history)
 
-    print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + Style.RESET_ALL + f" ({len(history)} commits)")
-    for commit in history[:3]:
-        print(f"  - {commit}")
+    print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + Style.RESET_ALL + f" ({len(commits)} commits)")
+    for commit in commits[:10]:
+        print(f"  {commit}")
 
 
 
@@ -246,7 +249,7 @@ def print_changed():
 
     print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + Style.RESET_ALL + f" ({len(files)} files)")
     for file in files[:3]:
-        print(f"  - {file}")
+        print(f"  {file}")
 
     if len(files) > 3:
         print(f"    ...{len(files) - 3} more files")
