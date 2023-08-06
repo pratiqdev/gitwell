@@ -224,15 +224,18 @@ def print_heading():
 
 
 
-def print_history():
+def print_history(last = False):
     g = get_git_details()
-    history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n %s" --date=format:"%m/%d %H:%M" --reverse')
+    
+    commit_limit = 1 if last else 10  # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
+    
+    history = run_command(f'git log -n {commit_limit} --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n %s" --date=format:"%m/%d %H:%M" --reverse')
     commits = history.split('---')
     commits = [entry for entry in commits if entry]
 
     print_break()
     print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"))
-    for commit in commits[:10]:
+    for commit in commits:
         commit = commit.replace(g['username'], '')
         print(f" {commit}")
 
@@ -290,7 +293,7 @@ def main():
         run_command('git commit -m "' + message + '"')
         clear_console()
         print_heading()
-        print(msg_blue("Commit: ") + Fore.GREEN + message + Style.RESET_ALL + '\n')
+        print_history(True)
     except Exception as e:
         print(msg_err("Error creating commit:" + e))
 
