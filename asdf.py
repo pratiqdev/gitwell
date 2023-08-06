@@ -249,10 +249,11 @@ def print_history(last = False):
             print(f"{commit}")
 
 
+oldG = {}
 
-
-def print_changed():
-    g = get_git_details()
+def print_changed(useOld = False):
+    g = oldG if useOld else get_git_details()
+    oldG = g.copy()
     files = g['changed_files']
     print_break()
 
@@ -341,7 +342,7 @@ def main():
         clear_console()
         print_heading()
         print('')
-        print_changed()
+        print_changed(True)
         print_history(True)
         print('')
     except Exception as e:
