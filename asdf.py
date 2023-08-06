@@ -219,21 +219,21 @@ def print_heading():
     g = get_git_details()
 
     print(Fore.BLUE + Style.BRIGHT + f"{g['username']}" + msg_dim(f"  {g['email']}"))
-    print(f"  fetch << {Fore.BLUE}{g['fetch_user']}/{Fore.WHITE}{g['fetch_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
-    print(f"  push  >> {Fore.BLUE}{g['push_user']}/{Fore.WHITE}{g['push_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
+    print(f" fetch << {Fore.BLUE}{g['fetch_user']}/{Fore.WHITE}{g['fetch_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
+    print(f" push  >> {Fore.BLUE}{g['push_user']}/{Fore.WHITE}{g['push_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
 
 
 
 def print_history():
     g = get_git_details()
-    history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n    %s" --date=format:"%m/%d %H:%M" --reverse')
+    history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n %s" --date=format:"%m/%d %H:%M" --reverse')
     commits = history.split('---')
 
     print_break()
     print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"), end="")
     for commit in commits[:10]:
         commit = commit.replace(g['username'], '')
-        print(f"  {commit}")
+        print(f" {commit}")
 
 
 
@@ -251,12 +251,12 @@ def print_changed():
     print_break()
     print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + Style.RESET_ALL + f" ({len(files)} files)")
     for file in files[:3]:
-        print(f"  {msg_warn('-')} {file}")
+        print(f" {msg_warn('-')} {file}")
 
     if len(files) > 3:
         print(f"    ...{len(files) - 3} more files")
 
-
+ 
 
 
 # Main function
