@@ -243,7 +243,7 @@ def print_changed():
     files = g['changed_files']
 
     if not files:
-        print(Fore.RED + Style.BRIGHT + "No changed files found... Exiting." + Style.RESET_ALL)
+        print(msg_err("\nNo changed files found... Exiting.\n"))
         exit()
 
     
