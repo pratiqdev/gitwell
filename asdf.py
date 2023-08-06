@@ -341,6 +341,7 @@ def main():
         clear_console()
         print_heading()
         print('')
+        print_changed()
         print_history(True)
         print('')
     except Exception as e:
