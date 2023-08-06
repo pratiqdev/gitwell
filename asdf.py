@@ -230,6 +230,7 @@ def print_history(last = False):
         commits = [entry for entry in commits if entry]
 
         print_break()
+        print('')
         for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
             print(f"{commit}")
