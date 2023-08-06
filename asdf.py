@@ -210,28 +210,29 @@ def get_git_details():
 
 
 
-
-
+def print_break():
+    print(Fore.BLACK + '-' * 30, end="")
 
 
 
 def print_heading():
     g = get_git_details()
 
-    print(Fore.BLUE + Style.BRIGHT + f"{g['username']}" + Style.RESET_ALL + f"  {g['email']}")
+    print(Fore.BLUE + Style.BRIGHT + f"{g['username']}" + msg_dim(f"  {g['email']}"))
     print(f"  fetch << {Fore.BLUE}{g['fetch_user']}/{Fore.WHITE}{g['fetch_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
     print(f"  push  >> {Fore.BLUE}{g['push_user']}/{Fore.WHITE}{g['push_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
 
 
 
 def print_history():
-    history = run_command(f'git log --pretty=format:"\t{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad {Fore.GREEN}%an {Fore.BLACK}%ar {Style.RESET_ALL} \n\t %s" --date=format:"%m/%d %H:%M"')
-    commits = history.split('\n')
-    # 63f054b - pratiqdev, 6 minutes ago : blap
-    # print(history)
+    g = get_git_details()
+    history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n    %s" --date=format:"%m/%d %H:%M" --reverse')
+    commits = history.split('---')
 
-    print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + Style.RESET_ALL + f" ({len(commits)} commits)")
+    print_break()
+    print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"), end="")
     for commit in commits[:10]:
+        commit = commit.replace(g['username'], '')
         print(f"  {commit}")
 
 
