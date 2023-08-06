@@ -1,13 +1,8 @@
 import os
 import subprocess
 import requests
-import json
-from getpass import getpass
+import sys
 from colorama import Fore, Style, Back
-from types import SimpleNamespace
-
-# Create an instance
-
 import time
 import functools
 
@@ -34,29 +29,6 @@ def useCache(func=None, cache_time=5000):
 
     return wrapper
 
-
-# def useCache(cache_time=5000):
-#     def decorator(func):
-#         cache = {}
-
-#         @functools.wraps(func)
-#         def wrapper(*args, **kwargs):
-#             key = str(args) + str(kwargs)
-#             cached_result, cached_time = cache.get(key, (None, None))
-
-#             if cached_time is None or time.monotonic() - cached_time > cache_time / 1000:
-#                 # Cache is empty or expired
-#                 result = func(*args, **kwargs)
-#                 cache[key] = (result, time.monotonic())
-#             else:
-#                 # Cache hit
-#                 result = cached_result
-
-#             return result
-
-#         return wrapper
-
-#     return decorator
 
 
 
@@ -98,20 +70,20 @@ def clear_console():
 def init_git():
     if not os.path.isdir(".git"):
         # print(msg_warn("!! dir is not a git repo."))
-        init_git_response = input(msg_bright("?? Initialize a repository? ") + msg_dim("(N) ") + Fore.CYAN)
+        init_git_response = input(msg_bright("Initialize a repository? ") + msg_dim("(N) ") + Fore.CYAN)
         if init_git_response.lower() == 'y':
             print("\033[A\033[2K", end="")
-            print(msg_bright("?? Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim( 19 * ' ' + "Initializing repo..."))
+            print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim( 19 * ' ' + "Initializing repo..."))
             # print(">> Initializing git repo...")
             run_command('git config --global init.defaultBranch main')
             run_command('git init')
             print("\033[A\033[2K", end="")
-            print(msg_bright("?? Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim(19 * ' ' + "Repo initialized."))
+            print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim(19 * ' ' + "Repo initialized."))
         else:
             print("\033[A\033[2K", end="")
-            print(msg_bright("?? Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "N")
+            print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "N")
             print(Fore.RED + Style.BRIGHT + "\nThis command can only be run from within a git repository.")
-            exit()
+            sys.exit()
 
 
 
@@ -137,30 +109,30 @@ def format_template_name(template_name, max_length=20):
 def create_gitignore():
     if not os.path.isfile('.gitignore'):
         # print(msg_warn("\n!! No '.gitignore' file found."))
-        # use_template = input(msg_bright("?? Create from template?") + msg_dim(" Y ") + Fore.CYAN)
+        # use_template = input(msg_bright("Create from template?") + msg_dim(" Y ") + Fore.CYAN)
         # if use_template.lower() != 'n':
         # print("\033[A\033[2K", end="")
-        # print(msg_bright("?? Copy .gitignore template? ") + Fore.CYAN + Style.BRIGHT + "Y")
-        template_name = input(msg_bright("?? Use .gitignore template: ") + msg_dim("(Node) ") +  Fore.CYAN)
+        # print(msg_bright("Copy .gitignore template? ") + Fore.CYAN + Style.BRIGHT + "Y")
+        template_name = input(msg_bright("Use .gitignore template: ") + msg_dim("(Node) ") +  Fore.CYAN)
         if template_name.lower() == '':
             template_name = "Node"
         
         formatted_template_name = format_template_name(template_name)
         
         print("\033[A\033[2K", end="")
-        print(msg_bright("?? Use .gitignore template? ") + Fore.CYAN + Style.BRIGHT + formatted_template_name + msg_dim("Copying template..."))
+        print(msg_bright("Use .gitignore template? ") + Fore.CYAN + Style.BRIGHT + formatted_template_name + msg_dim("Copying template..."))
 
         response = requests.get(f'https://raw.githubusercontent.com/github/gitignore/master/{template_name}.gitignore')
         if response.status_code == 200:
             with open('.gitignore', 'w') as f:
                 f.write(response.text)
             print("\033[A\033[2K", end="")
-            print(msg_bright("?? Use .gitignore template? ") + Fore.CYAN + Style.BRIGHT + formatted_template_name + msg_dim("Template copied.\n"))
+            print(msg_bright("Use .gitignore template? ") + Fore.CYAN + Style.BRIGHT + formatted_template_name + msg_dim("Template copied.\n"))
 
             # print(Fore.GREEN + f"Created '.gitignore' from template: '{template_name}'" + Style.RESET_ALL)
         else:
             print(Fore.RED + Style.BRIGHT + f"Error creating '.gitignore' from template: '{template_name}'. Verify the template exists or create the file manually.")
-            exit()
+            sys.exit()
         # else:
         #     with open('.gitignore', 'w') as f:
         #         f.write("# TODO- Add .gitignore contents")
@@ -229,7 +201,7 @@ def print_history(last = False):
     
     commit_limit = 1 if last else 10  # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
     
-    history = run_command(f'git log -n {commit_limit} --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n %s" --date=format:"%m/%d %H:%M" --reverse')
+    history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n%s" --date=format:"%m/%d %H:%M" --reverse')
     commits = history.split('---')
     commits = [entry for entry in commits if entry]
 
@@ -237,9 +209,9 @@ def print_history(last = False):
         print_break()
         print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"))
     
-    for commit in commits:
+    for commit in commits[:commit_limit]:
         commit = commit.replace(g['username'], '')
-        print(f" {commit}")
+        print(f"{commit}")
 
 
 
@@ -248,19 +220,19 @@ def print_changed():
     g = get_git_details()
     files = g['changed_files']
     print_break()
-    print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + Style.RESET_ALL + f" ({len(files)} files)")
+    print(Fore.BLUE + Style.BRIGHT + "\nChanges:" + msg_dim(f" ({len(files)} files)"))
 
     if not files:
         print(msg_err("\nNo changed files found... Exiting.\n"))
-        exit()
+        sys.exit()
 
     
 
     for file in files[:3]: 
-        print(f" {msg_warn('-')} {file}")
+        print(f"{msg_warn('-')} {file}")
 
     if len(files) > 3:
-        print(f"    ...{len(files) - 3} more files")
+        print(msg_dim(f"    ...{len(files) - 3} more files"))
 
 
  
@@ -289,7 +261,7 @@ def main():
     if not message:
         print("\033[A\033[2K", end="")
         print(msg_err("No message. Cancelling commit and exiting.\n"))
-        exit()
+        sys.exit()
 
     try:
         run_command('git commit -m "' + message + '"')
