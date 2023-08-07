@@ -5,6 +5,7 @@ import sys
 from colorama import Fore, Style, Back
 import time
 import functools
+from InquirerPy import prompt, inquirer
 
 MAX_HISTORY = 5
 MAX_CHANGES = 3
@@ -343,7 +344,15 @@ def main():
 
 
     print_break()
-    message = input(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL).strip()
+    print(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL, end="")
+    message = inquirer.text(
+        message="", 
+        multiline=True,
+        qmark="",
+        instruction="??",
+        long_instruction="......"
+    ).execute()
+
     if not message:
         print("\033[A\033[2K", end="")
         print(msg_err("No message. Cancelling commit and exiting.\n"))
