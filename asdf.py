@@ -180,6 +180,16 @@ def get_git_details():
         status, filename = name_status_line.split(maxsplit=1)
         additions, deletions, _ = numstat_line.split()
 
+        additions = '0' if additions == '-' else additions
+        deletions = '0' if deletions == '-' else deletions
+
+        # print({
+        #     "status":status,
+        #     "filename":filename,
+        #     "additions":additions,
+        #     "deletions":deletions,
+        # })
+
         if filename in combined_changes:
             combined_changes[filename]['additions'] += int(additions)
             combined_changes[filename]['deletions'] += int(deletions)
@@ -217,7 +227,7 @@ def print_heading():
     print(f" fetch << {Fore.BLUE}{g['fetch_user']}/{Fore.WHITE}{g['fetch_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
     print(f" push  >> {Fore.BLUE}{g['push_user']}/{Fore.WHITE}{g['push_repo']}/{Fore.YELLOW}{g['branch']}" + Style.RESET_ALL)
 
-
+ 
 
 def print_history(last = False):
     g = get_git_details()
