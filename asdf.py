@@ -13,7 +13,7 @@ from rich.theme import Theme
 # Define a custom theme
 custom_theme = Theme({
     "heading": "bold magenta",
-    "code": "on blue",
+    "code": "on black",
     "link": "underline cyan",
     # "bullet": "grey",
     # "enumerate.number": "grey",
