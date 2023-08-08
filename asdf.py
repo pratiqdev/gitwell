@@ -8,14 +8,37 @@ import functools
 from InquirerPy import prompt, inquirer, get_style
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.theme import Theme
 
-console = Console()
+# Define a custom theme
+custom_theme = Theme({
+    "heading": "bold magenta",
+    "code": "on blue",
+    "link": "underline cyan",
+    # "bullet": "grey",
+    # "enumerate.number": "grey",
+
+    "markdown.bullet": "#ff0000",
+    "markdown.bullet_lead": "#00ff00",
+    "markdown.enumerate.number": "#0000ff",
+    "markdown.enumerate_lead": "#222222",
+
+    "bullet": "#ff0000",
+    "bullet_lead": "#00ff00",
+    "enumerate.number": "#0000ff",
+    "enumerate_lead": "#222222",
+})
+
+# Create a console object with the custom theme
+console = Console(theme=custom_theme)
+
+# console = Console()
 
 # Function to clear console
 os.system('cls' if os.name == 'nt' else 'clear')
 
 
-
+HISTORY_STYLE = 3
 
 
 
@@ -47,7 +70,6 @@ common_style = get_style({
     
 gitignore_choices = ['AL', 'Actionscript', 'Ada', 'Agda', 'Android', 'AppEngine', 'AppceleratorTitanium', 'ArchLinuxPackages', 'Autotools', 'C', 'C++', 'CFWheels', 'CMake', 'CUDA', 'CakePHP', 'ChefCookbook', 'Clojure', 'CodeIgniter', 'CommonLisp', 'Composer', 'Concrete5', 'Coq', 'CraftCMS', 'D', 'DM', 'Dart', 'Delphi', 'Drupal', 'EPiServer', 'Eagle', 'Elisp', 'Elixir', 'Elm', 'Erlang', 'ExpressionEngine', 'ExtJs', 'Fancy', 'Finale', 'FlaxEngine', 'ForceDotCom', 'Fortran', 'FuelPHP', 'GWT', 'Gcov', 'GitBook', 'Go', 'Godot', 'Gradle', 'Grails', 'Haskell', 'IGORPro', 'Idris', 'JBoss', 'JENKINS_HOME', 'Java', 'Jekyll', 'Joomla', 'Julia', 'KiCad', 'Kohana', 'Kotlin', 'LabVIEW', 'Laravel', 'Leiningen', 'LemonStand', 'Lilypond', 'Lithium', 'Lua', 'Magento', 'Maven', 'Mercury', 'MetaProgrammingSystem', 'Nanoc', 'Nim', 'Node', 'OCaml', 'Objective-C', 'Opa', 'OpenCart', 'OracleForms', 'Packer', 'Perl', 'Phalcon', 'PlayFramework', 'Plone', 'Prestashop', 'Processing', 'PureScript', 'Python', 'Qooxdoo', 'Qt', 'R', 'ROS', 'Racket', 'Rails', 'Raku', 'RhodesRhomobile', 'Ruby', 'Rust', 'SCons', 'Sass', 'Scala', 'Scheme', 'Scrivener', 'Sdcc', 'SeamGen', 'SketchUp', 'Smalltalk', 'Stella', 'SugarCRM', 'Swift', 'Symfony', 'SymphonyCMS', 'TeX', 'Terraform', 'Textpattern', 'TurboGears2', 'TwinCAT3', 'Typo3', 'Unity', 'UnrealEngine', 'VVVV', 'VisualStudio', 'Waf', 'WordPress', 'Xojo', 'Yeoman', 'Yii', 'ZendFramework', 'Zephir']
 
-
 inq_commit = inquirer.text(
     multiline=True,
     message="\nCommit:",  
@@ -78,15 +100,7 @@ inq_gitignore = inquirer.fuzzy(
     style=common_style
 )
 
-# willInit = inq_init.execute()
-# # print('init:', willInit)
-# willTemplate = inq_gitignore.execute()
-# # print('template:', willTemplate)
-# # answer = inquirer_question.execute()
-# commit_msg = inquirer_commit.execute()
-# console.print(Markdown(commit_msg))
-# sys.exit()
-# ~                                                                                                                         
+
 
 
 
@@ -300,7 +314,7 @@ def get_git_details():
 
 
 def print_break():
-    print('\n' + Fore.BLACK + '-' * 60, end="")
+    print('\n' + Fore.BLACK + '-' * 80, end="")
 
 
 
@@ -314,6 +328,9 @@ def print_heading():
  
 
 def print_history(last = False):
+    if HISTORY_STYLE == 0:
+        return
+    
     g = get_git_details()
 
     if last:
@@ -327,12 +344,19 @@ def print_history(last = False):
         print('')
         for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
-            print(f"{commit}")
+            console.print(Markdown(commit))
     
     else:
         commit_limit = MAX_HISTORY # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
         
-        history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n%s" --date=format:"%m/%d %H:%M" --reverse')
+        history = "---"
+        if HISTORY_STYLE == 1:
+            history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} %s" --date=format:"%m/%d %H:%M" --reverse')
+        elif HISTORY_STYLE == 2:
+            history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n%s" --date=format:"%m/%d %H:%M" --reverse')
+        elif HISTORY_STYLE == 3:
+            history = run_command(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} ===%B" --date=format:"%m/%d %H:%M" --reverse')
+
         commits = history.split('---')
         commits = [entry for entry in commits if entry]
 
@@ -341,7 +365,18 @@ def print_history(last = False):
         
         for commit in commits[-commit_limit:]:
             commit = commit.replace(g['username'], '')
-            print(f"{commit}")
+
+            if HISTORY_STYLE == 1:
+                commit = commit.replace("\n", "")
+                commit = format_template_name(commit, 113)
+
+
+            if HISTORY_STYLE > 2:
+                commit = commit.replace("===", " " * 100)
+                print()
+                console.print(Markdown(commit))
+            else:
+                print(commit)
 
 
 oldG = {}
