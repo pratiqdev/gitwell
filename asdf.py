@@ -381,7 +381,8 @@ def print_history(last = False):
         print('')
         for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
-            console.print(Markdown(commit))
+            # console.print(Markdown(commit))
+            print(commit)
     
     else:
         commit_limit = MAX_HISTORY # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
