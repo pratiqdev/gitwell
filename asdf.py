@@ -515,7 +515,10 @@ def main():
         sys.exit()
 
     try:
-        run_command('git commit -m "' + message + '"')
+        with open('commit_message.txt', 'w') as file:
+            file.write(message)
+
+        run_command('git commit -F commit_message.txt')
         clear_console()
         print_heading()
         print_changed(True)
