@@ -202,7 +202,28 @@ def init_git():
             sys.exit()
 
 
+def truncate_text(text, max_lines = 4):
+    lines = text.split('\n')
+    num_total_lines = len(lines)
+    
+    if num_total_lines <= max_lines:
+        return {
+            "text": text,
+            "lines": lines,
+            "remaining": 0
+        }
 
+    truncated_lines = lines[:max_lines]
+    num_more_lines = num_total_lines - max_lines
+
+    truncated_text = '\n'.join(truncated_lines)
+    # truncated_text += f'\n\n... {num_more_lines} more lines'
+
+    return {
+        "text": truncated_text,
+        "lines": num_total_lines,
+        "remaining": num_more_lines
+    }
 
 
 
@@ -352,7 +373,7 @@ def print_history(last = False):
     if last:
         commit_limit = 1 # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
         
-        history = run_command(f'git log -n 1 --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} {Style.BRIGHT + Fore.WHITE}\n\n%B" --date=format:"%m/%d %H:%M"')
+        history = run_command(f'git log -n 1 --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} {Style.BRIGHT + Fore.WHITE}\n%B" --date=format:"%m/%d %H:%M"')
         commits = history.split('---')
         commits = [entry for entry in commits if entry]
 
@@ -389,8 +410,14 @@ def print_history(last = False):
 
             if HISTORY_STYLE > 2:
                 commit = commit.replace("===", " " * 100)
-                print()
-                console.print(Markdown(commit))
+                # print(msg_dim('-' * 40))
+                res = truncate_text(commit)
+                if not "text" in res:
+                    return
+                
+                # print(res["text"])
+                console.print(Markdown("\n" + res["text"]))
+                print(msg_dim(f"... {res['remaining']} more lines"))
             else:
                 print(commit)
 
