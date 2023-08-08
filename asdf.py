@@ -352,7 +352,7 @@ def print_history(last = False):
     if last:
         commit_limit = 1 # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
         
-        history = run_command(f'git log -n 1 --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n{Style.BRIGHT + Fore.WHITE}%B" --date=format:"%m/%d %H:%M"')
+        history = run_command(f'git log -n 1 --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} {Style.BRIGHT + Fore.WHITE}\n\n%B" --date=format:"%m/%d %H:%M"')
         commits = history.split('---')
         commits = [entry for entry in commits if entry]
 
