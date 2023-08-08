@@ -77,6 +77,22 @@ inq_commit = inquirer.text(
     amark="",
     instruction="(ESC + ENTER to confirm, supports markdown)",
     style=common_style,
+    default="""A full example:
+
+- A list
+- of unordered
+- items here
+
+1. A numbered
+2. List here
+
+```js
+const myFunc = () => {
+  return "Hello, World!"
+}
+```
+
+"""
 )
 
 inq_init = inquirer.confirm(
