@@ -5,33 +5,114 @@ import sys
 from colorama import Fore, Style, Back
 import time
 import functools
-from InquirerPy import prompt, inquirer
+from InquirerPy import prompt, inquirer, get_style
+from rich.console import Console
+from rich.markdown import Markdown
+
+console = Console()
+
+# Function to clear console
+os.system('cls' if os.name == 'nt' else 'clear')
+
+
+
+
+
 
 MAX_HISTORY = 5
 MAX_CHANGES = 3
 
-def useCache(func=None, cache_time=5000):
-    if func is None:  # Decorator was called with parentheses but no arguments.
-        return lambda f: useCache(f, cache_time=cache_time)
+common_style = get_style({
+    "questionmark": "#05f bold",
+    "answermark": "bold",
+    "answer": "#61afef",
+    "input": "#98c379",
+    "question": "#05f bold",
+    "answered_question": "bold",
+    "instruction": "#225",
+    "long_instruction": "#abb2bf",
+    "pointer": "#f00",
+    "checkbox": "#98c379",
+    "separator": "",
+    "skipped": "#5c6370",
+    "validator": "",
+    "marker": "#e5c07b",
+    "fuzzy_prompt": "#f00",
+    "fuzzy_info": "#abb2bf",
+    "fuzzy_border": "#4b5263",
+    "fuzzy_match": "#c678dd",
+    "spinner_pattern": "#e5c07b",
+    "spinner_text": "#f00",
+}, style_override=False)
+    
+gitignore_choices = ['AL', 'Actionscript', 'Ada', 'Agda', 'Android', 'AppEngine', 'AppceleratorTitanium', 'ArchLinuxPackages', 'Autotools', 'C', 'C++', 'CFWheels', 'CMake', 'CUDA', 'CakePHP', 'ChefCookbook', 'Clojure', 'CodeIgniter', 'CommonLisp', 'Composer', 'Concrete5', 'Coq', 'CraftCMS', 'D', 'DM', 'Dart', 'Delphi', 'Drupal', 'EPiServer', 'Eagle', 'Elisp', 'Elixir', 'Elm', 'Erlang', 'ExpressionEngine', 'ExtJs', 'Fancy', 'Finale', 'FlaxEngine', 'ForceDotCom', 'Fortran', 'FuelPHP', 'GWT', 'Gcov', 'GitBook', 'Go', 'Godot', 'Gradle', 'Grails', 'Haskell', 'IGORPro', 'Idris', 'JBoss', 'JENKINS_HOME', 'Java', 'Jekyll', 'Joomla', 'Julia', 'KiCad', 'Kohana', 'Kotlin', 'LabVIEW', 'Laravel', 'Leiningen', 'LemonStand', 'Lilypond', 'Lithium', 'Lua', 'Magento', 'Maven', 'Mercury', 'MetaProgrammingSystem', 'Nanoc', 'Nim', 'Node', 'OCaml', 'Objective-C', 'Opa', 'OpenCart', 'OracleForms', 'Packer', 'Perl', 'Phalcon', 'PlayFramework', 'Plone', 'Prestashop', 'Processing', 'PureScript', 'Python', 'Qooxdoo', 'Qt', 'R', 'ROS', 'Racket', 'Rails', 'Raku', 'RhodesRhomobile', 'Ruby', 'Rust', 'SCons', 'Sass', 'Scala', 'Scheme', 'Scrivener', 'Sdcc', 'SeamGen', 'SketchUp', 'Smalltalk', 'Stella', 'SugarCRM', 'Swift', 'Symfony', 'SymphonyCMS', 'TeX', 'Terraform', 'Textpattern', 'TurboGears2', 'TwinCAT3', 'Typo3', 'Unity', 'UnrealEngine', 'VVVV', 'VisualStudio', 'Waf', 'WordPress', 'Xojo', 'Yeoman', 'Yii', 'ZendFramework', 'Zephir']
 
-    cache = {}
 
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        key = str(args) + str(kwargs)
-        cached_result, cached_time = cache.get(key, (None, None))
+inq_commit = inquirer.text(
+    multiline=True,
+    message="\nCommit:",  
+    qmark="",
+    amark="",
+    instruction="(ESC + ENTER to confirm, supports markdown)",
+    style=common_style,
+)
 
-        if cached_time is None or time.monotonic() - cached_time > cache_time / 1000:
-            # Cache is empty or expired
-            result = func(*args, **kwargs)
-            cache[key] = (result, time.monotonic())
-        else:
-            # Cache hit
-            result = cached_result
+inq_init = inquirer.confirm(
+    message="Initialize a repository?",
+    default=False,
+    confirm_letter="y",
+    reject_letter="n",
+    transformer=lambda result: "Y          Initializing..." if result else "N          Aborting.",
+    style=common_style,
+)
 
-        return result
+inq_gitignore = inquirer.fuzzy(
+    message="Use .gitignore template?",
+    choices= gitignore_choices,
+    # multiselect=True,
+    # validate=lambda result: len(result) > 1,
+    default='Node',
+    # invalid_message="minimum 2 selections",
+    transformer=lambda result: f"Y          Copying template '{result}'..." if result else "N          Skipping template.",
+    max_height="30%",
+    style=common_style
+)
 
-    return wrapper
+# willInit = inq_init.execute()
+# # print('init:', willInit)
+# willTemplate = inq_gitignore.execute()
+# # print('template:', willTemplate)
+# # answer = inquirer_question.execute()
+# commit_msg = inquirer_commit.execute()
+# console.print(Markdown(commit_msg))
+# sys.exit()
+# ~                                                                                                                         
+
+
+
+
+def useCache(cache_time=5000):
+    def decorator(func):
+        cache = {}
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            key = str(args) + str(kwargs)
+            cached_result, cached_time = cache.get(key, (None, None))
+
+            if cached_time is None or time.monotonic() - cached_time > cache_time / 1000:
+                # Cache is empty or expired
+                result = func(*args, **kwargs)
+                cache[key] = (result, time.monotonic())
+            else:
+                # Cache hit
+                result = cached_result
+
+            return result
+
+        return wrapper
+    return decorator
+
 
 
 
@@ -74,8 +155,9 @@ def clear_console():
 def init_git():
     if not os.path.isdir(".git"):
         # print(msg_warn("!! dir is not a git repo."))
-        init_git_response = input(msg_bright("Initialize a repository? ") + msg_dim("(N) ") + Fore.CYAN)
-        if init_git_response.lower() == 'y':
+        willInit = inq_init.execute()
+        # init_git_response = input(msg_bright("Initialize a repository? ") + msg_dim("(N) ") + Fore.CYAN)
+        if willInit:
             print("\033[A\033[2K", end="")
             print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim( 19 * ' ' + "Initializing repo..."))
             # print(">> Initializing git repo...")
@@ -117,7 +199,8 @@ def create_gitignore():
         # if use_template.lower() != 'n':
         # print("\033[A\033[2K", end="")
         # print(msg_bright("Copy .gitignore template? ") + Fore.CYAN + Style.BRIGHT + "Y")
-        template_name = input(msg_bright("Use .gitignore template: ") + msg_dim("(Node) ") +  Fore.CYAN)
+        # template_name = input(msg_bright("Use .gitignore template: ") + msg_dim("(Node) ") +  Fore.CYAN)
+        template_name = inq_gitignore.execute()
         if template_name.lower() == '':
             template_name = "Node"
         
@@ -145,7 +228,7 @@ def create_gitignore():
 
 
 
-@useCache
+@useCache(3000)
 def get_git_details():
     try:
         origin = run_command('git remote get-url origin')
@@ -344,14 +427,8 @@ def main():
 
 
     print_break()
-    print(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL, end="")
-    message = inquirer.text(
-        message="", 
-        multiline=True,
-        qmark="",
-        instruction="??",
-        long_instruction="......"
-    ).execute()
+    # print(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL, end="")
+    message = inq_commit.execute()
 
     if not message:
         print("\033[A\033[2K", end="")
