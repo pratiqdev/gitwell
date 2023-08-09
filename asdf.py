@@ -1,3 +1,8 @@
+HISTORY_STYLE = 1
+MAX_HISTORY = 3
+MAX_CHANGES = 3
+
+
 import os
 import subprocess
 import requests
@@ -9,6 +14,8 @@ from InquirerPy import prompt, inquirer, get_style
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.theme import Theme
+
+
 
 # Define a custom theme
 custom_theme = Theme({
@@ -38,29 +45,23 @@ console = Console(theme=custom_theme)
 os.system('cls' if os.name == 'nt' else 'clear')
 
 
-HISTORY_STYLE = 3
-
-
-
-MAX_HISTORY = 5
-MAX_CHANGES = 3
 
 common_style = get_style({
-    "questionmark": "#05f bold",
+    "questionmark": "#05a bold",
     "answermark": "bold",
     "answer": "#61afef",
     "input": "#98c379",
-    "question": "#05f bold",
+    "question": "#05a bold",
     "answered_question": "bold",
     "instruction": "#225",
     "long_instruction": "#abb2bf",
-    "pointer": "#f00",
+    "pointer": "",
     "checkbox": "#98c379",
     "separator": "",
     "skipped": "#5c6370",
     "validator": "",
     "marker": "#e5c07b",
-    "fuzzy_prompt": "#f00",
+    "fuzzy_prompt": "#05a",
     "fuzzy_info": "#abb2bf",
     "fuzzy_border": "#4b5263",
     "fuzzy_match": "#c678dd",
@@ -77,22 +78,9 @@ inq_commit = inquirer.text(
     amark="",
     instruction="(ESC + ENTER to confirm, supports markdown)",
     style=common_style,
-    default="""A full example:
-
-- A list
-- of unordered
-- items here
-
-1. A numbered
-2. List here
-
-```js
-const myFunc = () => {
-  return "Hello, World!"
-}
-```
-
-"""
+    mandatory=False,
+    raise_keyboard_interrupt=False
+    # default=""
 )
 
 inq_init = inquirer.confirm(
@@ -109,7 +97,7 @@ inq_gitignore = inquirer.fuzzy(
     choices= gitignore_choices,
     # multiselect=True,
     # validate=lambda result: len(result) > 1,
-    default='Node',
+    # default='Node',
     # invalid_message="minimum 2 selections",
     transformer=lambda result: f"Y          Copying template '{result}'..." if result else "N          Skipping template.",
     max_height="30%",
@@ -117,7 +105,9 @@ inq_gitignore = inquirer.fuzzy(
 )
 
 
-
+# inq_init.execute()
+# inq_gitignore.execute()
+# sys.exit()
 
 
 
@@ -189,7 +179,7 @@ def init_git():
         # init_git_response = input(msg_bright("Initialize a repository? ") + msg_dim("(N) ") + Fore.CYAN)
         if willInit:
             print("\033[A\033[2K", end="")
-            print(msg_bright("Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim( 19 * ' ' + "Initializing repo..."))
+            print(msg_bright("? Initialize a repository? ") + Fore.CYAN + Style.BRIGHT + "Y" + msg_dim( 19 * ' ' + "Initializing repo..."))
             # print(">> Initializing git repo...")
             run_command('git config --global init.defaultBranch main')
             run_command('git init')
@@ -202,7 +192,7 @@ def init_git():
             sys.exit()
 
 
-def truncate_text(text, max_lines = 4):
+def truncate_text(text, max_lines = 6):
     lines = text.split('\n')
     num_total_lines = len(lines)
     
@@ -210,7 +200,7 @@ def truncate_text(text, max_lines = 4):
         return {
             "text": text,
             "lines": lines,
-            "remaining": 0
+            "remaining": ""
         }
 
     truncated_lines = lines[:max_lines]
@@ -222,7 +212,7 @@ def truncate_text(text, max_lines = 4):
     return {
         "text": truncated_text,
         "lines": num_total_lines,
-        "remaining": num_more_lines
+        "remaining": f"\n ... {num_more_lines} more lines\n"
     }
 
 
@@ -398,6 +388,9 @@ def print_history(last = False):
         commits = history.split('---')
         commits = [entry for entry in commits if entry]
 
+        if len(commits) == 0:
+            return
+
         print_break()
         print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msg_dim(f" ({len(commits)} commits)"))
         
@@ -418,7 +411,7 @@ def print_history(last = False):
                 
                 # print(res["text"])
                 console.print(Markdown("\n" + res["text"]))
-                print(msg_dim(f"... {res['remaining']} more lines"))
+                print(msg_dim(res['remaining']), end="")
             else:
                 print(commit)
 
@@ -459,11 +452,16 @@ def print_changed(useOld=False):
     for filename, changes in list(files.items())[:MAX_CHANGES]: 
         # print(filename, changes)
         # added, removed, path = file.split('\t')
-        name = format_template_name(filename, 30)
-        print(f"{msg_warn('-')} {name} {Fore.BLACK + changes['status']} {Fore.GREEN}+{changes['additions']} {Fore.RED}-{changes['deletions']}{Style.RESET_ALL}")
+        shortStat = format_template_name(f'{changes["status"]}', 1)
+        shortAdd = format_template_name(f'{changes["additions"]}', 3)
+        shortDel = format_template_name(f'{changes["deletions"]}', 3)
+        diff = f"{Fore.BLACK + shortStat} {Fore.GREEN}+{shortAdd} {Fore.RED}-{shortDel}{Style.RESET_ALL}"
+        # shortDiff = format_template_name(diff, 14)
+        # name = format_template_name(filename, 30)
+        print(f"{msg_warn('-')} {diff} {Style.RESET_ALL + filename}")
 
     if len(files) > MAX_CHANGES:
-        print(msg_dim(f"    ...{len(files) - MAX_CHANGES} more files"))
+        print(msg_dim(f" ...{len(files) - MAX_CHANGES} more files"))
 
 
 # def load_config():
@@ -483,49 +481,53 @@ def print_changed(useOld=False):
 #         print(f"Received the following arguments: {sys.argv[1:]}")
 
 
-
+ 
 # Main function
 def main():
+    try:
 
     # load_config()
 
-    clear_console()
-    init_git()
-    create_gitignore()
-
-    print_heading()
-    print_history()
-    print_changed()
-    
-
-    # username, email, branch, fetch_user, fetch_repo, push_user, push_repo, changed_files = get_git_details()
-
-    # print(Fore.BLUE + Style.BRIGHT + f"{username}" + Style.RESET_ALL + f"  {email}")
-    # print(f"  fetch << {Fore.BLUE}{fetch_user}/{Fore.WHITE}{fetch_repo}/{Fore.YELLOW}{branch}" + Style.RESET_ALL)
-    # print(f"  push  >> {Fore.BLUE}{push_user}/{Fore.WHITE}{push_repo}/{Fore.YELLOW}{branch}" + Style.RESET_ALL)
-
-
-    print_break()
-    # print(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL, end="")
-    message = inq_commit.execute()
-
-    if not message:
-        print("\033[A\033[2K", end="")
-        print(msg_err("No message. Cancelling commit and exiting.\n"))
-        sys.exit()
-
-    try:
-        with open('commit_message.txt', 'w') as file:
-            file.write(message)
-
-        run_command('git commit -F commit_message.txt')
         clear_console()
+        init_git()
+        create_gitignore()
+
         print_heading()
-        print_changed(True)
-        print_history(True)
-        print('')
+        print_history()
+        print_changed()
+        
+
+        # username, email, branch, fetch_user, fetch_repo, push_user, push_repo, changed_files = get_git_details()
+
+        # print(Fore.BLUE + Style.BRIGHT + f"{username}" + Style.RESET_ALL + f"  {email}")
+        # print(f"  fetch << {Fore.BLUE}{fetch_user}/{Fore.WHITE}{fetch_repo}/{Fore.YELLOW}{branch}" + Style.RESET_ALL)
+        # print(f"  push  >> {Fore.BLUE}{push_user}/{Fore.WHITE}{push_repo}/{Fore.YELLOW}{branch}" + Style.RESET_ALL)
+
+
+        print_break()
+        # print(Fore.BLUE + Style.BRIGHT + "\nCommit:\n" + Style.RESET_ALL, end="")
+        message = inq_commit.execute()
+
+        if not message:
+            print("\033[A\033[2K", end="")
+            print(msg_err("No message. Cancelling commit and exiting.\n"))
+            sys.exit()
+
+        try:
+            with open('commit_message.txt', 'w') as file:
+                file.write(message)
+
+            run_command('git commit -F commit_message.txt')
+            clear_console()
+            print_heading()
+            print_changed(True)
+            print_history(True)
+            print('')
+        except Exception as e:
+            print(msg_err("Error creating commit:" + e))
+
     except Exception as e:
-        print(msg_err("Error creating commit:" + e))
+        print(msg_err("Error:" + e))
 
 # Execute main function
 if __name__ == "__main__":

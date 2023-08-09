@@ -32,6 +32,15 @@ def clear_console():
 def clamp(value, min_value, max_value):
     return max(min_value, min(value, max_value))
 
+def pad(str, length, char=" "):
+    if len(char) != 1:
+        raise ValueError("Padding character must be a single character.")
+
+    if length > len(str):
+        return str + char * (length - len(str))
+    else:
+        return str[:length]
+    
 #&                                                                                                  
 def load_config():
     # Config file names
@@ -43,7 +52,7 @@ def load_config():
             config.update(global_config)
             loaded_global_config.update(global_config)
     else: 
-        print("no global config, creating with defaults...")
+        print(">> No global config, creating with defaults...")
         with open(global_config_file, 'w') as file:
             yaml.safe_dump(config, file)
             loaded_global_config.update(config)
@@ -56,7 +65,7 @@ def load_config():
             local_config = yaml.safe_load(file)
             config.update(local_config)
     else: 
-        print("no local config")
+        print(">> No local config, using globals")
 
 #&                                                                                                  
 def parse_args():
@@ -114,16 +123,6 @@ def parse_args():
 
 
 
-# Here's a brief explanation of the code:
-
-#     We start by defining our global config object.
-#     The load_config function loads the global configuration file (.gitwell_globals) if it exists, and then loads the local configuration file (.gitwell) if it exists. The local configuration takes precedence over the global configuration.
-#     The parse_args function splits each command line argument at the equals sign (=), interprets the value as an integer, and updates the config object. This will take precedence over both the local and global configurations.
-#     Finally, we call load_config and parse_args to perform the configuration and argument parsing, and print the final config object.
-
-# Note: This script assumes that all values in the configuration files and command line arguments are integers. If you need to support different types of values (like strings or floats), you'll need to modify the parse_args function to handle these.
-
-
 
 #&                                                                                                  
 def main():
@@ -135,11 +134,26 @@ def main():
         parse_args()
 
         # Print the final configuration
-        print(config)
+        # print(config)
+
+        for key, value in config.items():
+            print(f">> {pad(key, 15)} {value}")
 
     except Exception as e:
         print("Error creating commit:" + e)
+"""
+If this were a function that could generate and manage config
 
+- take initial object as the first arg
+- takes options:
+    - useGlobals: boolean
+
+
+useConfig(
+    key="my_py_app",
+    useGlobals=True
+)
+"""
 
 
 # Execute main function
