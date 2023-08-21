@@ -303,7 +303,7 @@ def get_git_details():
 
     for name_status_line, numstat_line in zip(name_status_lines, numstat_lines):
         status, filename = name_status_line.split(maxsplit=1)
-        additions, deletions, _ = numstat_line.split()
+        additions, deletions, _ = numstat_line.split(maxsplit=2)
 
         additions = '0' if additions == '-' else additions
         deletions = '0' if deletions == '-' else deletions
@@ -418,6 +418,14 @@ def print_history(last = False):
 
 oldG = {}
 
+def split_and_format(s, tabs=2):
+    if '\t' in s:
+        word1, word2 = s.split()
+        tabs = '\t' * tabs + '   '
+        return f'{Fore.BLACK}|{Style.RESET_ALL} {word1}\n{tabs}{Fore.BLACK}>{Style.RESET_ALL} {word2}'
+    else:
+        return s
+
 def print_changed(useOld=False):
     global oldG  # Add this line to indicate you want to use the global variable
     g = oldG if useOld else get_git_details()
@@ -440,6 +448,8 @@ def print_changed(useOld=False):
             added_count += 1
         elif changes['status'] == 'D':
             deleted_count += 1
+        elif 'R' in changes['status']:
+            changed_count += 1
     added = ""
     deleted = ""
     if added_count > 0:
@@ -452,13 +462,14 @@ def print_changed(useOld=False):
     for filename, changes in list(files.items())[:MAX_CHANGES]: 
         # print(filename, changes)
         # added, removed, path = file.split('\t')
-        shortStat = format_template_name(f'{changes["status"]}', 1)
-        shortAdd = format_template_name(f'{changes["additions"]}', 3)
-        shortDel = format_template_name(f'{changes["deletions"]}', 3)
+        shortStat = format_template_name(f'{changes["status"]}', 4)
+        shortAdd = format_template_name(f'{changes["additions"]}', 4)
+        shortDel = format_template_name(f'{changes["deletions"]}', 4)
         diff = f"{Fore.BLACK + shortStat} {Fore.GREEN}+{shortAdd} {Fore.RED}-{shortDel}{Style.RESET_ALL}"
         # shortDiff = format_template_name(diff, 14)
         # name = format_template_name(filename, 30)
-        print(f"{msg_warn('-')} {diff} {Style.RESET_ALL + filename}")
+        splitFiles = split_and_format(filename)
+        print(f"{msg_warn('-')} {diff} {Style.RESET_ALL + splitFiles}")
 
     if len(files) > MAX_CHANGES:
         print(msg_dim(f" ...{len(files) - MAX_CHANGES} more files"))
