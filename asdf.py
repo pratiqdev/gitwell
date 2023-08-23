@@ -525,10 +525,14 @@ def main():
             sys.exit()
 
         try:
-            with open('commit_message.txt', 'w') as file:
+            temp_file = 'temp_commit_message_file.txt'
+            with open(temp_file, 'w') as file:
                 file.write(message)
 
-            run_command('git commit -F commit_message.txt')
+            run_command(f'git commit -F {temp_file}')
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+
             clear_console()
             print_heading()
             print_changed(True)
