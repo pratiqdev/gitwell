@@ -343,7 +343,7 @@ def printHistory(last: bool = False, run_stage: bool = True) -> None:
 
     **Usage:**
         - ``last=False`` during the pre-commit review (up to ``MAX_HISTORY`` entries,
-          subject to ``HISTORY_STYLE``).
+          newest-first, subject to ``HISTORY_STYLE``).
         - ``last=True`` after a commit to echo the fresh HEAD message with a
           single-entry layout.
 
@@ -378,11 +378,17 @@ def printHistory(last: bool = False, run_stage: bool = True) -> None:
         
         history = "---"
         if HISTORY_STYLE == 1:
-            history = runCommand(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} %s" --date=format:"%m/%d %H:%M" --reverse')
+            history = runCommand(
+                f'git log -n {commit_limit} --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} %s" --date=format:"%m/%d %H:%M"'
+            )
         elif HISTORY_STYLE == 2:
-            history = runCommand(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n%s" --date=format:"%m/%d %H:%M" --reverse')
+            history = runCommand(
+                f'git log -n {commit_limit} --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} \n%s" --date=format:"%m/%d %H:%M"'
+            )
         elif HISTORY_STYLE == 3:
-            history = runCommand(f'git log --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} ===%B" --date=format:"%m/%d %H:%M" --reverse')
+            history = runCommand(
+                f'git log -n {commit_limit} --pretty=format:"---{Fore.YELLOW + Back.BLACK}%h {Fore.BLUE}%ad{Style.RESET_ALL + Fore.BLACK} %ar {Fore.GREEN}%an{Style.RESET_ALL} ===%B" --date=format:"%m/%d %H:%M"'
+            )
 
         commits = history.split('---')
         commits = [entry for entry in commits if entry]
@@ -392,8 +398,8 @@ def printHistory(last: bool = False, run_stage: bool = True) -> None:
 
         printBreak()
         print(Fore.BLUE + Style.BRIGHT + "\nHistory:" + msgDim(f" ({len(commits)} commits)"))
-        
-        for commit in commits[-commit_limit:]:
+
+        for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
 
             if HISTORY_STYLE == 1:
