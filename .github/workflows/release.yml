@@ -24,7 +24,8 @@ jobs:
             slug: windows-amd64
           - os: macos-latest
             slug: macos-arm64
-          - os: macos-13
+          # Hosted Intel/macOS builds: macos-13 was retired; see actions/runner-images README.
+          - os: macos-15-intel
             slug: macos-amd64
     runs-on: ${{ matrix.os }}
     defaults:
