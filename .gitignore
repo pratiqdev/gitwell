@@ -133,3 +133,9 @@ build/**/*
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+# Python bytecode and caches (__pycache__/ matches those dirs at any depth)
+__pycache__/
+*.py[cod]
+*$py.class

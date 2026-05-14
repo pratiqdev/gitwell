@@ -1,12 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import importlib.util
+from pathlib import Path
 
 block_cipher = None
 
+_gitwell_spec = importlib.util.find_spec("gitwell")
+if _gitwell_spec is None or not getattr(_gitwell_spec, "origin", None):
+    raise RuntimeError(
+        "Install the project first so PyInstaller can resolve the package, e.g. "
+        "`pip install -e .` from the repo root."
+    )
+_gitwell_root = Path(_gitwell_spec.origin).parent
 
 a = Analysis(
-    ['asdf.py'],
-    pathex=[],
+    [str(_gitwell_root / "__main__.py")],
+    pathex=[str(_gitwell_root)],
     binaries=[],
     datas=[],
     hiddenimports=[],
@@ -28,11 +37,11 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='asdf',
+    name="gitwell",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,

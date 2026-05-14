@@ -1,0 +1,161 @@
+# Build frozen gitwell binaries on version tags and publish GitHub Releases.
+# See RELEASE.md for maintainer steps and version policy (tag must match pyproject).
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            slug: linux-amd64
+          - os: windows-latest
+            slug: windows-amd64
+          - os: macos-latest
+            slug: macos-arm64
+          - os: macos-13
+            slug: macos-amd64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHON_VERSION: "3.12"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set GITWELL_VERSION
+        id: vers
+        run: |
+          if [[ "${{ github.ref_type }}" == tag ]]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          else
+            VERSION=$(python3 -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])')
+          fi
+          echo "GITWELL_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag matches pyproject version
+        if: github.ref_type == 'tag'
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITWELL_VERSION: ${{ steps.vers.outputs.version }}
+        run: |
+          python3 <<'PY'
+          import os
+          import pathlib
+          import tomllib
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          from_pep = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          from_tag = os.environ["GITWELL_VERSION"]
+          assert from_tag == from_pep, (
+              f"Pushed tag {tag!r} (version {from_tag!r}) does not equal "
+              f"pyproject [project].version {from_pep!r}; bump pyproject.toml then retag."
+          )
+          print(f"OK: tag version {from_tag} matches pyproject.toml")
+          PY
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project and PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[build]"
+
+      - name: PyInstaller freeze
+        run: pyinstaller --noconfirm --clean gitwell.spec
+
+      - name: Package archive
+        env:
+          SLUG: ${{ matrix.slug }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITWELL_VERSION}"
+          ART="gitwell-${VERSION}-${SLUG}.zip"
+          rm -f "$ART"
+          cd dist
+          if [[ -f gitwell.exe ]]; then
+            zip -q -j "../$ART" gitwell.exe
+          else
+            chmod +x gitwell
+            zip -q -j "../$ART" gitwell
+          fi
+          cd ..
+          ls -la "$ART"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gitwell-${{ matrix.slug }}
+          path: gitwell-${{ steps.vers.outputs.version }}-${{ matrix.slug }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Normalize asset layout and checksums
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "GITWELL_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          cd release-assets
+          ls -la
+          sha256sum gitwell-${VERSION}-*.zip > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Compose release body (changelog prefix + GitHub generated notes)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITWELL_VERSION: ${{ env.GITWELL_VERSION }}
+        run: |
+          set -euo pipefail
+          python3 scripts/extract_changelog_fragment.py "${GITWELL_VERSION}"
+
+          gh api repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="${{ github.ref_name }}" \
+            -f target_commitish="${{ github.sha }}" \
+            --jq .body > _generated_release_notes.md
+
+          rm -f release-body.md
+          if [[ -f _release_notes_prefix.md ]]; then
+            cat _release_notes_prefix.md >> release-body.md
+          fi
+          cat _generated_release_notes.md >> release-body.md
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: gitwell ${{ env.GITWELL_VERSION }}
+          tag_name: ${{ github.ref_name }}
+          body_path: release-body.md
+          draft: false
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/gitwell-${{ env.GITWELL_VERSION }}-*.zip
+            release-assets/SHA256SUMS
