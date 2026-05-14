@@ -85,6 +85,8 @@ gitwell-${GITWELL_VERSION}-${OS_SLUG}-${ARCH_SLUG}.zip
 
 Current matrix slugs: **`linux-amd64`**, **`windows-amd64`**, **`macos-arm64`**, **`macos-amd64`** (Intel via `macos-13`).
 
+CI writes each archive with [scripts/package_frozen_zip.py](scripts/package_frozen_zip.py) (stdlib **`zipfile`**) so **`windows-latest`** jobs do not depend on the **`zip`** executable (Git Bash omits it on hosted runners).
+
 ### Permissions
 
 ```yaml

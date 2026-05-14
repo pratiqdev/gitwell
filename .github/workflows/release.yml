@@ -84,21 +84,9 @@ jobs:
 
       - name: Package archive
         env:
+          GITWELL_VERSION: ${{ env.GITWELL_VERSION }}
           SLUG: ${{ matrix.slug }}
-        run: |
-          set -euo pipefail
-          VERSION="${GITWELL_VERSION}"
-          ART="gitwell-${VERSION}-${SLUG}.zip"
-          rm -f "$ART"
-          cd dist
-          if [[ -f gitwell.exe ]]; then
-            zip -q -j "../$ART" gitwell.exe
-          else
-            chmod +x gitwell
-            zip -q -j "../$ART" gitwell
-          fi
-          cd ..
-          ls -la "$ART"
+        run: python scripts/package_frozen_zip.py
 
       - uses: actions/upload-artifact@v4
         with:

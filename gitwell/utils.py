@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import functools
 import os
+import re
+import shutil
 import subprocess
 import time
 from typing import Any, Callable, Dict, List
@@ -18,7 +20,49 @@ from typing import Any, Callable, Dict, List
 from colorama import Fore, Style
 
 # -----------------------------------------------------------------------------
-# Terminal and subprocess
+# Terminal geometry
+# -----------------------------------------------------------------------------
+
+
+def terminal_size(*, fallback: tuple[int, int] = (80, 24)) -> tuple[int, int]:
+    """
+    Current terminal size ``(columns, lines)``.
+
+    Uses ``shutil.get_terminal_size`` so non-TTY contexts fall back reliably.
+    """
+    try:
+        s = shutil.get_terminal_size(fallback=fallback)
+        return max(1, int(s.columns)), max(1, int(s.lines))
+    except OSError:
+        fc, fr = fallback
+        return max(1, int(fc)), max(1, int(fr))
+
+
+def terminal_columns(*, minimum: int = 1, fallback: tuple[int, int] = (80, 24)) -> int:
+    """
+    Current stdout column count for laying out bordered text.
+
+    **Arguments:**
+        ``minimum``: Floor when ioctl reports unrealistic values (default ``1``).
+        ``fallback``: Width/height substitute when detached from a real TTY.
+    """
+    return max(minimum, terminal_size(fallback=fallback)[0])
+
+
+def sync_tty_env_columns_lines() -> None:
+    """
+    Set ``COLUMNS`` / ``LINES`` to mirror the controlling terminal.
+
+    Some prompt/UI stacks still inspect these POSIX variables instead of
+    ``shutil.get_terminal_size``.
+    """
+    cols, rows = terminal_size()
+    os.environ["COLUMNS"] = str(cols)
+    os.environ["LINES"] = str(rows)
+
+
+# -----------------------------------------------------------------------------
+# Terminal UX and subprocess
 # -----------------------------------------------------------------------------
 
 
@@ -290,6 +334,180 @@ def pad(text: str, length: int, char: str = " ") -> str:
     return text[:length]
 
 
+_GIT_REL_TIME_DEFAULT_WIDTH = 16
+
+
+def compact_git_relative_times(
+    text: str,
+    *,
+    field_width: int | None = None,
+) -> str:
+    """
+    Abbreviate Git's English relative date phrases (from ``git log --pretty=%ar``).
+
+    Each match is abbreviated then **space-padded** (``pad``) to a fixed width so
+    history lines stay column-aligned across commits.
+
+    **Examples:** ``7 minutes ago`` → ``7m ago`` plus trailing spaces; compound forms
+    like ``2 years, 9 months ago`` → ``2y 9mo ago`` plus pad.
+
+    **Arguments:**
+        ``text`` (str): Commit line(s) potentially containing ``%ar``-style wording.
+        ``field_width`` (int | None, optional): Width passed to ``pad`` for each
+            abbreviated segment. Default is ``_GIT_REL_TIME_DEFAULT_WIDTH``; values are
+            clamped to **[4, 32]** inclusive.
+    """
+    width = clamp(
+        float(field_width if field_width is not None else _GIT_REL_TIME_DEFAULT_WIDTH),
+        4.0,
+        32.0,
+    )
+
+    # pad() expects ``int`` width
+    iw = int(width)
+
+    def pj(s: str) -> str:
+        return pad(s, iw)
+
+    rules: list[tuple[re.Pattern[str], Callable[[re.Match[str]], str]]] = [
+        (
+            re.compile(r"\b(\d+)\s+years?,\s*(\d+)\s+months?\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}y {m.group(2)}mo ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+years\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}y ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+year\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}y ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+months\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}mo ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+month\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}mo ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+weeks\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}w ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+week\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}w ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+days\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}d ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+day\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}d ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+hours\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}h ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+hour\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}h ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+minutes\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}m ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+minute\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}m ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+seconds\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}s ago"),
+        ),
+        (
+            re.compile(r"\b(\d+)\s+second\s+ago\b", re.I),
+            lambda m: pj(f"{m.group(1)}s ago"),
+        ),
+        (re.compile(r"\bjust\s+now\b", re.I), lambda _m: pj("now")),
+    ]
+
+    s = text
+    for pat, repl in rules:
+        s = pat.sub(repl, s)
+    return s
+
+
+_CSI_ESC = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+def visible_line_width(text: str) -> int:
+    """
+    Visible character count for a single terminal line with ANSI CSI SGR escapes.
+
+    Sequences matched by ``_CSI_ESC`` (e.g. colorama ``\\x1b[31m``, ``\\x1b[0m``)
+    do not consume column budget.
+    """
+    vis = 0
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == "\x1b":
+            m = _CSI_ESC.match(text, i)
+            if m:
+                i = m.end()
+                continue
+            i += 1
+            vis += 1
+            continue
+        vis += 1
+        i += 1
+    return vis
+
+
+def truncate_visual_line(
+    text: str,
+    max_visual_cols: int,
+    *,
+    ellipsis: str = "...",
+) -> str:
+    """
+    Truncate ``text`` to ``max_visual_cols`` terminal columns ignoring ANSI escapes.
+
+    **Intention:** One-line git history renders hash, timestamps, author, and
+    subject with heavy SGR prefixes; :func:`len` on that string massively
+    underestimates remaining width for ``%s``, so callers must truncate on
+    *visible* width instead of Python string length.
+    """
+    if max_visual_cols < 1:
+        return ""
+    if visible_line_width(text) <= max_visual_cols:
+        return text
+    ell_vis = visible_line_width(ellipsis)
+    ell = ellipsis if ell_vis <= max_visual_cols else ""
+    budget = max_visual_cols - len(ell) if ell else max_visual_cols
+    if budget < 1:
+        return ellipsis[:max_visual_cols]
+    vis = 0
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == "\x1b":
+            m = _CSI_ESC.match(text, i)
+            if m:
+                i = m.end()
+                continue
+            i += 1
+            vis += 1
+            continue
+        if vis >= budget:
+            break
+        vis += 1
+        i += 1
+    return text[:i] + ell
+
+
 def truncateText(text: str, max_lines: int = 6) -> Dict[str, Any]:
     """
     Limit multi-line ``text`` to the first ``max_lines`` lines for compact display.
@@ -356,16 +574,12 @@ def formatTemplateName(template_name: str, max_length: int = 20) -> str:
 
 def printBreak() -> None:
     """
-    Print a horizontal rule (80 dashes) with a leading newline.
+    Print a horizontal rule spanning ``terminal_columns()`` dashes plus a newline.
 
-    **Intention:** Visually separate sections (history, changes, commit) in the
-    terminal UI. Uses black foreground for the dash run per existing aesthetic.
-
-    **Arguments:** None.
-
-    **Returns:** ``None`` (prints to stdout, no trailing newline after the rule).
+    Uses black foreground for separation between history/changes prompts.
     """
-    print("\n" + Fore.BLACK + "-" * 80, end="")
+    cols = terminal_columns()
+    print("\n" + Fore.BLACK + "-" * cols, end="")
 
 
 def splitAndFormat(path_line: str, tabs: int = 2) -> str:

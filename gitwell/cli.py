@@ -28,7 +28,9 @@ from gitwell.config import (
 )
 
 from gitwell.utils import (
+    clamp,
     clearConsole,
+    compact_git_relative_times,
     formatTemplateName,
     git_index_has_staged_vs_head,
     msgBright,
@@ -38,7 +40,10 @@ from gitwell.utils import (
     printBreak,
     runCommand,
     splitAndFormat,
+    sync_tty_env_columns_lines,
+    terminal_columns,
     truncateText,
+    truncate_visual_line,
     useCache,
 )
 
@@ -63,13 +68,14 @@ custom_theme = Theme({
     "enumerate_lead": "#222222",
 })
 
-# Create a console object with the custom theme
-console = Console(theme=custom_theme)
 
-# console = Console()
-
-# Function to clear console
-os.system('cls' if os.name == 'nt' else 'clear')
+def _history_markdown_console() -> Console:
+    """Rich console honoring current TTY width for Markdown-rendered commits."""
+    return Console(
+        theme=custom_theme,
+        width=terminal_columns(),
+        soft_wrap=True,
+    )
 
 
 
@@ -235,6 +241,7 @@ def sync_runtime_from_config() -> None:
     HISTORY_STYLE = int(gw_config.get("history_type", 1))
     MAX_HISTORY = int(gw_config.get("history_length", 10))
     MAX_CHANGES = int(gw_config.get("diff_length", 3))
+    sync_tty_env_columns_lines()
 
 
 def _should_run_stage_command(run_stage: bool) -> bool:
@@ -339,7 +346,8 @@ def printHistory(last: bool = False, run_stage: bool = True) -> None:
 
     **Intention:** Surface repository rhythm via ``git log`` with embeded ANSI
     color codes in the format string; richer layouts use ``rich`` Markdown when
-    ``HISTORY_STYLE > 2``.
+    ``HISTORY_STYLE > 2``. Line wrapping, separators, Markdown width, rulers, and
+    relative-date padding follow ``terminal_columns()`` / ``terminal_size()``.
 
     **Usage:**
         - ``last=False`` during the pre-commit review (up to ``MAX_HISTORY`` entries,
@@ -358,6 +366,9 @@ def printHistory(last: bool = False, run_stage: bool = True) -> None:
         return
     
     g = fetchGitDetails(run_stage=run_stage)
+    tty_cols = terminal_columns()
+    rel_pad_width = int(round(clamp(tty_cols / 9.0, 12.0, 26.0)))
+    history_body_spacer_cols = max(12, tty_cols - 42)
 
     if last:
         commit_limit = 1 # Display only the most recent commit if `last` is True, otherwise display the last 10 commits
@@ -370,6 +381,7 @@ def printHistory(last: bool = False, run_stage: bool = True) -> None:
         print('')
         for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
+            commit = compact_git_relative_times(commit, field_width=rel_pad_width)
             # console.print(Markdown(commit))
             print(commit)
     
@@ -401,21 +413,22 @@ def printHistory(last: bool = False, run_stage: bool = True) -> None:
 
         for commit in commits[:commit_limit]:
             commit = commit.replace(g['username'], '')
+            commit = compact_git_relative_times(commit, field_width=rel_pad_width)
 
             if HISTORY_STYLE == 1:
                 commit = commit.replace("\n", "")
-                commit = formatTemplateName(commit, 113)
+                commit = truncate_visual_line(commit, tty_cols)
 
 
             if HISTORY_STYLE > 2:
-                commit = commit.replace("===", " " * 100)
+                commit = commit.replace("===", " " * history_body_spacer_cols)
                 # print(msgDim('-' * 40))
                 res = truncateText(commit)
                 if not "text" in res:
                     return
                 
                 # print(res["text"])
-                console.print(Markdown("\n" + res["text"]))
+                _history_markdown_console().print(Markdown("\n" + res["text"]))
                 print(msgDim(res['remaining']), end="")
             else:
                 print(commit)
@@ -591,6 +604,7 @@ def _run_config_argv(config_argv: list[str]) -> None:
     parser = build_config_argument_parser()
     ns = parser.parse_args(config_argv)
     clearConsole()
+    sync_tty_env_columns_lines()
     apply_config_cli(ns)
 
 
@@ -679,7 +693,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-# TODO: inherit console width from terminal more accurately
-# TODO: shorten history dates - '2 years, 9 months ago' -> '2y 9mo ago'
-# '2 minutes ago' -> '2m ago'
