@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitwell"
-version = "0.1.0"
+version = "0.1.1"
 description = "Easy tracking and committing for frequent gitters."
 readme = "README.md"
 requires-python = ">=3.9"
